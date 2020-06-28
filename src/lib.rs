@@ -26,7 +26,7 @@
 //!     array.iter().grouping_by(|point| point.x)
 //! );
 //! ```
-//!
+
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 

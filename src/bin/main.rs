@@ -1,4 +1,4 @@
-use prueba_stream::GroupingBy;
+use grouping_by::GroupingBy;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Point {

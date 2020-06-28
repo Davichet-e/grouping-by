@@ -1,7 +1,10 @@
 [package]
-name = "prueba_stream"
+name = "grouping_by"
 version = "0.1.0"
 authors = ["David Garcia <davgarmor2@alum.us.es>"]
+license = "MIT"
+repository = "https://github.com/Davichet-e/grouping-by"
+readme = "README.md"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
