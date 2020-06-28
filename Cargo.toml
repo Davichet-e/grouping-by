@@ -3,6 +3,7 @@ name = "grouping_by"
 version = "0.1.0"
 authors = ["David Garcia <davgarmor2@alum.us.es>"]
 license = "MIT"
+description = "A simple library which allows the user to group a iterator by any user defined function"
 repository = "https://github.com/Davichet-e/grouping-by"
 readme = "README.md"
 edition = "2018"
