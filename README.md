@@ -28,3 +28,7 @@ assert_eq!(
     array.iter().grouping_by(|point| point.x)
 );
 ```
+
+## Usage
+
+Just import the trait (`use grouping_by::GroupingBy;`) into your crate and it would just work.
