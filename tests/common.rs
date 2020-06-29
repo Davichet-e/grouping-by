@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use grouping_by::GroupingBy;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 struct Point {
     x: i32,
     y: i32,

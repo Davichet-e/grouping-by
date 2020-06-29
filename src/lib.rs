@@ -30,6 +30,8 @@ assert_eq!(
     array.iter().grouping_by(|point| point.x)
 );
 ```*/
+// TODO
+// Implement two argument grouping by, just like groupingBy of Java does
 
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -42,7 +44,6 @@ pub trait GroupingBy {
     /// and the values are a `Vec` with the items of the iterator which has the key as property
     fn grouping_by<K, F>(self, key: F) -> HashMap<K, Vec<Self::GItem>>
     where
-        Self: Sized,
         F: Fn(&Self::GItem) -> K,
         K: Eq + Hash;
 
@@ -51,7 +52,6 @@ pub trait GroupingBy {
     /// and the values are a `HashSet` with the items of the iterator which has the key as property
     fn grouping_by_as_set<K, F>(self, key: F) -> HashMap<K, HashSet<Self::GItem>>
     where
-        Self: Sized,
         Self::GItem: Eq + Hash,
         F: Fn(&Self::GItem) -> K,
         K: Eq + Hash;
@@ -61,7 +61,6 @@ impl<T: Iterator> GroupingBy for T {
     type GItem = <T as Iterator>::Item;
     fn grouping_by<K, F>(self, key: F) -> HashMap<K, Vec<Self::GItem>>
     where
-        Self: Sized,
         F: Fn(&Self::GItem) -> K,
         K: Eq + Hash,
     {
@@ -73,7 +72,6 @@ impl<T: Iterator> GroupingBy for T {
     }
     fn grouping_by_as_set<K, F>(self, key: F) -> HashMap<K, HashSet<Self::GItem>>
     where
-        Self: Sized,
         Self::GItem: Eq + Hash,
         F: Fn(&Self::GItem) -> K,
         K: Eq + Hash,

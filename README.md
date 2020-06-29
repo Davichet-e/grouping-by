@@ -1,5 +1,7 @@
 # grouping-by
 
+[![Crates.io](https://img.shields.io/crates/v/grouping-by.svg)](https://crates.io/crates/grouping-by)
+[![Documentation](https://docs.rs/grouping_by/badge.svg)](https://docs.rs/grouping-by)
 This library provides users the possibility of grouping their iterators by any function.
 It is similar to C# `IEnumerable.GroupBy` or Java `Collectors.groupingBy`
 
