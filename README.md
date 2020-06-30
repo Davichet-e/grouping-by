@@ -2,8 +2,10 @@
 
 [![Crates.io](https://img.shields.io/crates/v/grouping-by.svg)](https://crates.io/crates/grouping-by)
 [![Documentation](https://docs.rs/grouping_by/badge.svg)](https://docs.rs/grouping-by)
-This library provides users the possibility of grouping their iterators by any function.
-It is similar to C# `IEnumerable.GroupBy` or Java `Collectors.groupingBy`
+
+This small library provides users the possibility of grouping their iterators of various ways. It is still in development and therefore is not recommended for production code. There will be breaking changes constantly.
+
+It is similar to Java `Collectors.groupingBy`
 
 # Example:
 
@@ -34,4 +36,4 @@ assert_eq!(
 
 ## Usage
 
-Just import the trait (`use grouping_by::GroupingBy;`) into your crate and it would just work.
+Just import the trait (`use grouping_by::GroupingBy;`) into your crate and use it on your iterators.
