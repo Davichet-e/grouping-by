@@ -9,11 +9,24 @@ struct Point {
     y: i32,
 }
 
+struct Vector {
+    x: i32,
+    y: i32,
+    z: i32,
+}
+
 const FOO: [Point; 4] = [
     Point { x: 1, y: 2 },
     Point { x: 1, y: 3 },
     Point { x: 2, y: 2 },
     Point { x: 2, y: 2 },
+];
+
+const BAR: [Vector; 4] = [
+    Vector { x: 1, y: 2, z: 4 },
+    Vector { x: 1, y: 3, z: 3 },
+    Vector { x: 2, y: 2, z: 2 },
+    Vector { x: 2, y: 2, z: 1 },
 ];
 
 #[test]
@@ -111,32 +124,20 @@ fn test_grouping_by_num_set() {
 
 #[test]
 fn grouping_by_min() {
-    let a = FOO.iter().grouping_by_min(
-        |point| point.y,
-        |point1: &Point, point2: &Point| point1.x.cmp(&point2.x),
-        |&&point| point,
+    let a = BAR.iter().grouping_by_min(
+        |vector| vector.y,
+        |vector1, vector2| vector1.x.cmp(&vector2.x),
+        |vector| vector.z,
     );
-    assert_eq!(
-        a,
-        [(2, Point { x: 1, y: 2 }), (3, Point { x: 1, y: 3 })]
-            .iter()
-            .cloned()
-            .collect()
-    )
+    assert_eq!(a, [(2, 4), (3, 3)].iter().cloned().collect())
 }
 
 #[test]
 fn grouping_by_max() {
-    let a = FOO.iter().grouping_by_max(
-        |point| point.y,
-        |point1: &Point, point2: &Point| point1.x.cmp(&point2.x),
-        |&&point| point,
+    let a = BAR.iter().grouping_by_max(
+        |vector| vector.y,
+        |vector1, vector2| vector1.x.cmp(&vector2.x),
+        |vector| vector.z,
     );
-    assert_eq!(
-        a,
-        [(2, Point { x: 2, y: 2 }), (3, Point { x: 1, y: 3 })]
-            .iter()
-            .cloned()
-            .collect()
-    )
+    assert_eq!(a, [(2, 2), (3, 3)].iter().cloned().collect())
 }

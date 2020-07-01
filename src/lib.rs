@@ -118,22 +118,8 @@ pub trait GroupingBy {
         K: Eq + Hash,
         F: Fn(&Self::GItem) -> K;
 
-    /// Given a functions F, C and G, compute the minimum of the elements given a comparator and a finisher.
-    /// Params:
-    ///
-    /// `key: F` -> function to create the keys of the resulting map
-    ///
-    /// `comparator: C` -> function to get the min value
-    ///
-    /// `finisher: G` -> function to perform the last transformation to the value
-    fn grouping_by_min<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
-    where
-        K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
-        G: Fn(&Self::GItem) -> O,
-        C: Fn(&O, &O) -> std::cmp::Ordering;
-
     /// Given a functions F, C and G, compute the maximum of the elements given a comparator and a finisher.
+    ///
     /// Params:
     ///
     /// `key` -> function to create the keys of the resulting map
@@ -141,12 +127,124 @@ pub trait GroupingBy {
     /// `comparator` -> function to get the max value
     ///
     /// `finisher` -> function to perform the last transformation to the value
+    ///
+    /// ## Example:
+    ///
+    /// ```rust
+    /// # use crate::grouping_by::GroupingBy;
+    /// struct Vector {
+    ///     x: i32,
+    ///     y: i32,
+    ///     z: i32
+    /// }
+    ///
+    /// const BAR: [Vector; 4] = [
+    ///     Vector { x: 1, y: 2, z: 4 },
+    ///     Vector { x: 1, y: 3, z: 3 },
+    ///     Vector { x: 2, y: 2, z: 2 },
+    ///     Vector { x: 2, y: 2, z: 1 },
+    /// ];
+    ///
+    /// // Return a HashMap with the `y` fields as keys
+    /// // and the `z` fields of the vectors with that key with the maximum `x`
+    ///
+    /// let a = BAR.iter().grouping_by_max(
+    ///     |vector| vector.y,
+    ///     |vector1, vector2| vector1.x.cmp(&vector2.x),
+    ///     |vector| vector.z,
+    /// );
+    /// assert_eq!(a, [(3, 3), (2, 2)].iter().cloned().collect())
+    /// ```
     fn grouping_by_max<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
     where
         K: Eq + Hash,
         F: Fn(&Self::GItem) -> K,
-        G: Fn(&Self::GItem) -> O,
-        C: Fn(&O, &O) -> std::cmp::Ordering;
+        C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
+        G: Fn(&Self::GItem) -> O;
+
+    /// Given a functions F, C and G, compute the maximum of the elements given a comparator and a finisher.
+    ///
+    /// Params:
+    ///
+    /// `key` -> function to create the keys of the resulting map
+    ///
+    /// `comparator` -> function to get the max value
+    ///
+    /// `finisher` -> function to perform the last transformation to the value
+    ///
+    /// ## Example:
+    ///
+    /// ```rust
+    /// # use crate::grouping_by::GroupingBy;
+    /// struct Vector {
+    ///     x: i32,
+    ///     y: i32,
+    ///     z: i32
+    /// }
+    ///
+    /// const BAR: [Vector; 4] = [
+    ///     Vector { x: 1, y: 2, z: 4 },
+    ///     Vector { x: 1, y: 3, z: 3 },
+    ///     Vector { x: 2, y: 2, z: 2 },
+    ///     Vector { x: 2, y: 2, z: 1 },
+    /// ];
+    ///
+    /// // Return a HashMap with the `y` fields as keys
+    /// // and the `z` fields of the vectors with that key with the minimum `x`
+    ///
+    /// let a = BAR.iter().grouping_by_min(
+    ///     |vector| vector.y,
+    ///     |vector1, vector2| vector1.x.cmp(&vector2.x),
+    ///     |vector| vector.z,
+    /// );
+    /// assert_eq!(a, [(2, 4), (3, 3)].iter().cloned().collect())
+    /// ```
+    fn grouping_by_min<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
+    where
+        K: Eq + Hash,
+        F: Fn(&Self::GItem) -> K,
+        C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
+        G: Fn(&Self::GItem) -> O;
+}
+
+mod utilities {
+    use super::{Entry, Hash, HashMap};
+
+    pub fn grouping_by_min_max_aux<T, K, F, G, O, C>(
+        iterator: T,
+        key: F,
+        comparator: C,
+        finisher: G,
+        type_ord: std::cmp::Ordering,
+    ) -> HashMap<K, O>
+    where
+        T: Iterator,
+        K: Eq + Hash,
+        F: Fn(&<T as std::iter::Iterator>::Item) -> K,
+        C: Fn(
+            &<T as std::iter::Iterator>::Item,
+            &<T as std::iter::Iterator>::Item,
+        ) -> std::cmp::Ordering,
+        G: Fn(&<T as std::iter::Iterator>::Item) -> O,
+    {
+        let mut aux: HashMap<K, <T as std::iter::Iterator>::Item> = HashMap::new();
+        for item in iterator {
+            let key = key(&item);
+            match aux.entry(key) {
+                Entry::Occupied(mut entry) => {
+                    if comparator(&item, entry.get()) == type_ord {
+                        entry.insert(item);
+                    }
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(item);
+                }
+            }
+        }
+        aux.into_iter()
+            .map(|(key, value)| (key, finisher(&value)))
+            .collect()
+    }
 }
 
 impl<T: Iterator> GroupingBy for T {
@@ -188,51 +286,35 @@ impl<T: Iterator> GroupingBy for T {
         map
     }
 
-    fn grouping_by_min<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
-    where
-        K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
-        G: Fn(&Self::GItem) -> O,
-        C: Fn(&O, &O) -> std::cmp::Ordering,
-    {
-        let mut map: HashMap<K, O> = HashMap::new();
-        for item in self {
-            let new_value = finisher(&item);
-            match map.entry(key(&item)) {
-                Entry::Occupied(mut entry) => {
-                    if comparator(&new_value, entry.get()) == std::cmp::Ordering::Less {
-                        entry.insert(new_value);
-                    }
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(new_value);
-                }
-            }
-        }
-        map
-    }
-
     fn grouping_by_max<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
     where
         K: Eq + Hash,
         F: Fn(&Self::GItem) -> K,
+        C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
         G: Fn(&Self::GItem) -> O,
-        C: Fn(&O, &O) -> std::cmp::Ordering,
     {
-        let mut map: HashMap<K, O> = HashMap::new();
-        for item in self {
-            let new_value = finisher(&item);
-            match map.entry(key(&item)) {
-                std::collections::hash_map::Entry::Occupied(mut entry) => {
-                    if comparator(&new_value, entry.get()) == std::cmp::Ordering::Greater {
-                        entry.insert(new_value);
-                    }
-                }
-                std::collections::hash_map::Entry::Vacant(entry) => {
-                    entry.insert(new_value);
-                }
-            }
-        }
-        map
+        utilities::grouping_by_min_max_aux(
+            self,
+            key,
+            comparator,
+            finisher,
+            std::cmp::Ordering::Greater,
+        )
+    }
+
+    fn grouping_by_min<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
+    where
+        K: Eq + Hash,
+        F: Fn(&Self::GItem) -> K,
+        C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
+        G: Fn(&Self::GItem) -> O,
+    {
+        utilities::grouping_by_min_max_aux(
+            self,
+            key,
+            comparator,
+            finisher,
+            std::cmp::Ordering::Less,
+        )
     }
 }
