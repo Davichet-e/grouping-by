@@ -34,6 +34,17 @@ assert_eq!(
 );
 ```
 
+### More advanced usage
+
+```rust
+// This returns for each year, the codes of the contracts with the most days.
+contracts.iter().grouping_by_max(
+    |contract| contract.date.year(), // Key of HashMap
+    |contract1, contract2| contract1.days.cmp(&contract2.days), // Comparator to get the max
+    |contract| contract.code.clone() // Finisher to get the desired value
+) // Returns `HashMap<i32, String>`
+```
+
 ## Usage
 
 Just import the trait (`use grouping_by::GroupingBy;`) into your crate and use it on your iterators.
