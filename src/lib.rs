@@ -205,6 +205,44 @@ pub trait GroupingBy {
         F: Fn(&Self::GItem) -> K,
         C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
         G: Fn(&Self::GItem) -> O;
+
+    /// Return a map containing the sum of the values of a given key both obtained by provided as input functions.
+    ///
+    /// Params:
+    ///
+    /// `key` -> function to create the keys of the resulting map
+    ///
+    /// `value` -> function to get the values to sum
+    ///
+    /// ## Example:
+    ///
+    /// ```rust
+    /// # use crate::grouping_by::GroupingBy;
+    /// struct Vector {
+    ///     x: i32,
+    ///     y: i32,
+    ///     z: i32
+    /// }
+    ///
+    /// const BAR: [Vector; 4] = [
+    ///     Vector { x: 1, y: 2, z: 4 },
+    ///     Vector { x: 1, y: 3, z: 3 },
+    ///     Vector { x: 2, y: 2, z: 2 },
+    ///     Vector { x: 2, y: 2, z: 1 },
+    /// ];
+    ///
+    /// let a = BAR.iter().grouping_by_summing(
+    ///     |vector| vector.x,
+    ///     |vector| vector.y
+    /// );
+    /// assert_eq!(a, [(2, 4), (1, 5)].iter().cloned().collect())
+    /// ```
+    fn grouping_by_summing<K, V, F, G>(self, key: F, sum_func: G) -> HashMap<K, V>
+    where
+        K: Eq + Hash,
+        F: Fn(&Self::GItem) -> K,
+        G: Fn(&Self::GItem) -> V,
+        V: Default + std::ops::AddAssign;
 }
 
 mod utilities {
@@ -220,14 +258,11 @@ mod utilities {
     where
         T: Iterator,
         K: Eq + Hash,
-        F: Fn(&<T as std::iter::Iterator>::Item) -> K,
-        C: Fn(
-            &<T as std::iter::Iterator>::Item,
-            &<T as std::iter::Iterator>::Item,
-        ) -> std::cmp::Ordering,
-        G: Fn(&<T as std::iter::Iterator>::Item) -> O,
+        F: Fn(&T::Item) -> K,
+        C: Fn(&T::Item, &T::Item) -> std::cmp::Ordering,
+        G: Fn(&T::Item) -> O,
     {
-        let mut aux: HashMap<K, <T as std::iter::Iterator>::Item> = HashMap::new();
+        let mut aux: HashMap<K, T::Item> = HashMap::new();
         for item in iterator {
             let key = key(&item);
             match aux.entry(key) {
@@ -248,7 +283,7 @@ mod utilities {
 }
 
 impl<T: Iterator> GroupingBy for T {
-    type GItem = <T as Iterator>::Item;
+    type GItem = T::Item;
     fn grouping_by<K, F>(self, key: F) -> HashMap<K, Vec<Self::GItem>>
     where
         F: Fn(&Self::GItem) -> K,
@@ -316,5 +351,20 @@ impl<T: Iterator> GroupingBy for T {
             finisher,
             std::cmp::Ordering::Less,
         )
+    }
+
+    fn grouping_by_summing<K, V, F, G>(self, key: F, value: G) -> HashMap<K, V>
+    where
+        K: Eq + Hash,
+        F: Fn(&Self::GItem) -> K,
+        G: Fn(&Self::GItem) -> V,
+        V: Default + std::ops::AddAssign,
+    {
+        let mut map = HashMap::new();
+        for item in self {
+            let v = map.entry(key(&item)).or_default();
+            *v += value(&item);
+        }
+        map
     }
 }
