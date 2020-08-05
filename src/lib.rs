@@ -67,7 +67,7 @@ pub trait GroupingBy {
     /// ```
     fn grouping_by<K, F>(self, key: F) -> HashMap<K, Vec<Self::GItem>>
     where
-        F: Fn(&Self::GItem) -> K,
+        F: FnMut(&Self::GItem) -> K,
         K: Eq + Hash;
 
     /// Group by the key function given as parameter.
@@ -94,7 +94,7 @@ pub trait GroupingBy {
     fn grouping_by_as_set<K, F>(self, key: F) -> HashMap<K, HashSet<Self::GItem>>
     where
         Self::GItem: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
+        F: FnMut(&Self::GItem) -> K,
         K: Eq + Hash;
 
     /// Count the elements of the iterator given a function
@@ -116,9 +116,9 @@ pub trait GroupingBy {
     fn counter<K, F>(self, key: F) -> HashMap<K, usize>
     where
         K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K;
+        F: FnMut(&Self::GItem) -> K;
 
-    /// Given a functions F, C and G, compute the maximum of the elements given a comparator and a finisher.
+    /// Given a functions F and C compute the maximum of the elements given a comparator and a finisher.
     ///
     /// Params:
     ///
@@ -126,12 +126,12 @@ pub trait GroupingBy {
     ///
     /// `comparator` -> function to get the max value
     ///
-    /// `finisher` -> function to perform the last transformation to the value
-    ///
     /// ## Example:
     ///
     /// ```rust
     /// # use crate::grouping_by::GroupingBy;
+    ///
+    /// #[derive(Debug, Clone, PartialEq)]
     /// struct Vector {
     ///     x: i32,
     ///     y: i32,
@@ -150,19 +150,17 @@ pub trait GroupingBy {
     ///
     /// let a = BAR.iter().grouping_by_max(
     ///     |vector| vector.y,
-    ///     |vector1, vector2| vector1.x.cmp(&vector2.x),
-    ///     |vector| vector.z,
+    ///     |vector1, vector2| vector1.x.cmp(&vector2.x)
     /// );
-    /// assert_eq!(a, [(3, 3), (2, 2)].iter().cloned().collect())
+    /// assert_eq!(a, [(3, &Vector { x: 1, y: 3, z: 3 } ), (2, &Vector { x: 2, y: 2, z: 2 })].iter().cloned().collect())
     /// ```
-    fn grouping_by_max<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
+    fn grouping_by_max<K, F, C>(self, key: F, comparator: C) -> HashMap<K, Self::GItem>
     where
         K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
-        C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
-        G: Fn(&Self::GItem) -> O;
+        F: FnMut(&Self::GItem) -> K,
+        C: FnMut(&Self::GItem, &Self::GItem) -> std::cmp::Ordering;
 
-    /// Given a functions F, C and G, compute the maximum of the elements given a comparator and a finisher.
+    /// Given a functions F, C and compute the maximum of the elements given a comparator and a finisher.
     ///
     /// Params:
     ///
@@ -170,12 +168,12 @@ pub trait GroupingBy {
     ///
     /// `comparator` -> function to get the max value
     ///
-    /// `finisher` -> function to perform the last transformation to the value
-    ///
     /// ## Example:
     ///
     /// ```rust
     /// # use crate::grouping_by::GroupingBy;
+    ///
+    /// #[derive(Debug, Clone, PartialEq)]
     /// struct Vector {
     ///     x: i32,
     ///     y: i32,
@@ -195,16 +193,14 @@ pub trait GroupingBy {
     /// let a = BAR.iter().grouping_by_min(
     ///     |vector| vector.y,
     ///     |vector1, vector2| vector1.x.cmp(&vector2.x),
-    ///     |vector| vector.z,
     /// );
-    /// assert_eq!(a, [(2, 4), (3, 3)].iter().cloned().collect())
+    /// assert_eq!(a, [(3, &Vector { x: 1, y: 3, z: 3 } ), (2, &Vector { x: 1, y: 2, z: 4 })].iter().cloned().collect())
     /// ```
-    fn grouping_by_min<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
+    fn grouping_by_min<K, F, C>(self, key: F, comparator: C) -> HashMap<K, Self::GItem>
     where
         K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
-        C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
-        G: Fn(&Self::GItem) -> O;
+        F: FnMut(&Self::GItem) -> K,
+        C: FnMut(&Self::GItem, &Self::GItem) -> std::cmp::Ordering;
 
     /// Return a map containing the sum of the values of a given key both obtained by provided as input functions.
     ///
@@ -231,41 +227,39 @@ pub trait GroupingBy {
     ///     Vector { x: 2, y: 2, z: 1 },
     /// ];
     ///
-    /// let a = BAR.iter().grouping_by_summing(
+    /// let a = BAR.iter().summing(
     ///     |vector| vector.x,
     ///     |vector| vector.y
     /// );
     /// assert_eq!(a, [(2, 4), (1, 5)].iter().cloned().collect())
     /// ```
-    fn grouping_by_summing<K, V, F, G>(self, key: F, sum_func: G) -> HashMap<K, V>
+    fn summing<K, V, F, G>(self, key: F, sum_func: G) -> HashMap<K, V>
     where
         K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
-        G: Fn(&Self::GItem) -> V,
+        F: FnMut(&Self::GItem) -> K,
+        G: FnMut(&Self::GItem) -> V,
         V: Default + std::ops::AddAssign;
 }
 
 mod utilities {
     use super::{Entry, Hash, HashMap};
 
-    pub fn grouping_by_min_max_aux<T, K, F, G, O, C>(
+    pub fn grouping_by_min_max_aux<T, K, F, C>(
         iterator: T,
-        key: F,
-        comparator: C,
-        finisher: G,
+        mut key: F,
+        mut comparator: C,
         type_ord: std::cmp::Ordering,
-    ) -> HashMap<K, O>
+    ) -> HashMap<K, T::Item>
     where
         T: Iterator,
         K: Eq + Hash,
-        F: Fn(&T::Item) -> K,
-        C: Fn(&T::Item, &T::Item) -> std::cmp::Ordering,
-        G: Fn(&T::Item) -> O,
+        F: FnMut(&T::Item) -> K,
+        C: FnMut(&T::Item, &T::Item) -> std::cmp::Ordering,
     {
-        let mut aux: HashMap<K, T::Item> = HashMap::new();
+        let mut map = HashMap::new();
         for item in iterator {
             let key = key(&item);
-            match aux.entry(key) {
+            match map.entry(key) {
                 Entry::Occupied(mut entry) => {
                     if comparator(&item, entry.get()) == type_ord {
                         entry.insert(item);
@@ -276,17 +270,15 @@ mod utilities {
                 }
             }
         }
-        aux.into_iter()
-            .map(|(key, value)| (key, finisher(&value)))
-            .collect()
+        map
     }
 }
 
 impl<T: Iterator> GroupingBy for T {
     type GItem = T::Item;
-    fn grouping_by<K, F>(self, key: F) -> HashMap<K, Vec<Self::GItem>>
+    fn grouping_by<K, F>(self, mut key: F) -> HashMap<K, Vec<Self::GItem>>
     where
-        F: Fn(&Self::GItem) -> K,
+        F: FnMut(&Self::GItem) -> K,
         K: Eq + Hash,
     {
         let mut map = HashMap::new();
@@ -295,10 +287,10 @@ impl<T: Iterator> GroupingBy for T {
         }
         map
     }
-    fn grouping_by_as_set<K, F>(self, key: F) -> HashMap<K, HashSet<Self::GItem>>
+    fn grouping_by_as_set<K, F>(self, mut key: F) -> HashMap<K, HashSet<Self::GItem>>
     where
         Self::GItem: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
+        F: FnMut(&Self::GItem) -> K,
         K: Eq + Hash,
     {
         let mut map = HashMap::new();
@@ -309,10 +301,10 @@ impl<T: Iterator> GroupingBy for T {
         }
         map
     }
-    fn counter<K, F>(self, key: F) -> HashMap<K, usize>
+    fn counter<K, F>(self, mut key: F) -> HashMap<K, usize>
     where
         K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
+        F: FnMut(&Self::GItem) -> K,
     {
         let mut map = HashMap::new();
         for item in self {
@@ -321,46 +313,32 @@ impl<T: Iterator> GroupingBy for T {
         map
     }
 
-    fn grouping_by_max<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
+    fn grouping_by_max<K, F, C>(self, key: F, comparator: C) -> HashMap<K, Self::GItem>
     where
         K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
-        C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
-        G: Fn(&Self::GItem) -> O,
+        F: FnMut(&Self::GItem) -> K,
+        C: FnMut(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
     {
-        utilities::grouping_by_min_max_aux(
-            self,
-            key,
-            comparator,
-            finisher,
-            std::cmp::Ordering::Greater,
-        )
+        utilities::grouping_by_min_max_aux(self, key, comparator, std::cmp::Ordering::Greater)
     }
 
-    fn grouping_by_min<K, F, G, O, C>(self, key: F, comparator: C, finisher: G) -> HashMap<K, O>
+    fn grouping_by_min<K, F, C>(self, key: F, comparator: C) -> HashMap<K, Self::GItem>
     where
         K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
-        C: Fn(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
-        G: Fn(&Self::GItem) -> O,
+        F: FnMut(&Self::GItem) -> K,
+        C: FnMut(&Self::GItem, &Self::GItem) -> std::cmp::Ordering,
     {
-        utilities::grouping_by_min_max_aux(
-            self,
-            key,
-            comparator,
-            finisher,
-            std::cmp::Ordering::Less,
-        )
+        utilities::grouping_by_min_max_aux(self, key, comparator, std::cmp::Ordering::Less)
     }
 
-    fn grouping_by_summing<K, V, F, G>(self, key: F, value: G) -> HashMap<K, V>
+    fn summing<K, V, F, G>(self, mut key: F, mut value: G) -> HashMap<K, V>
     where
         K: Eq + Hash,
-        F: Fn(&Self::GItem) -> K,
-        G: Fn(&Self::GItem) -> V,
+        F: FnMut(&Self::GItem) -> K,
+        G: FnMut(&Self::GItem) -> V,
         V: Default + std::ops::AddAssign,
     {
-        let mut map = HashMap::new();
+        let mut map: HashMap<K, V> = HashMap::new();
         for item in self {
             let v = map.entry(key(&item)).or_default();
             *v += value(&item);

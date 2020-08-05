@@ -1,6 +1,6 @@
 [package]
 name = "grouping_by"
-version = "0.1.7"
+version = "0.2.0"
 authors = ["David Garcia <davgarmor2@alum.us.es>"]
 license = "MIT"
 description = "A simple library which allows the user to group an iterator by various ways."

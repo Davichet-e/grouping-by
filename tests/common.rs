@@ -9,6 +9,7 @@ struct Point {
     y: i32,
 }
 
+#[derive(Clone, Debug, PartialEq)]
 struct Vector {
     x: i32,
     y: i32,
@@ -127,9 +128,17 @@ fn grouping_by_min() {
     let a = VECTOR_ARRAY.iter().grouping_by_min(
         |vector| vector.y,
         |vector1, vector2| vector1.x.cmp(&vector2.x),
-        |vector| vector.z,
     );
-    assert_eq!(a, [(2, 4), (3, 3)].iter().cloned().collect())
+    assert_eq!(
+        a,
+        [
+            (3, &Vector { x: 1, y: 3, z: 3 }),
+            (2, &Vector { x: 1, y: 2, z: 4 })
+        ]
+        .iter()
+        .cloned()
+        .collect()
+    )
 }
 
 #[test]
@@ -137,9 +146,17 @@ fn grouping_by_max() {
     let a = VECTOR_ARRAY.iter().grouping_by_max(
         |vector| vector.y,
         |vector1, vector2| vector1.x.cmp(&vector2.x),
-        |vector| vector.z,
     );
-    assert_eq!(a, [(2, 2), (3, 3)].iter().cloned().collect())
+    assert_eq!(
+        a,
+        [
+            (2, &Vector { x: 2, y: 2, z: 2 }),
+            (3, &Vector { x: 1, y: 3, z: 3 }),
+        ]
+        .iter()
+        .cloned()
+        .collect()
+    )
 }
 
 #[test]
@@ -148,8 +165,6 @@ fn test_grouping_by_summing() {
 
     assert_eq!(
         points_summed,
-        POINT_ARRAY
-            .iter()
-            .grouping_by_summing(|point| point.x, |point| point.y)
+        POINT_ARRAY.iter().summing(|point| point.x, |point| point.y)
     );
 }
