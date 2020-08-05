@@ -81,14 +81,14 @@ pub trait GroupingBy {
     ///
     /// let numbers_grouped = [-1i8, -2, 1, 2]
     ///     .iter()
-    ///     .grouping_by_as_set(|number| number.abs());
+    ///     .grouping_by(|number| number.abs());
     ///
     /// assert_eq!(
     ///     numbers_grouped,
-    ///     [(1, [1, -1].iter().collect()), (2, [2, -2].iter().collect())]
+    ///     [(2, vec![&-2, &2]), (1, vec![&-1, &1])]
     ///         .iter()
     ///         .cloned()
-    ///         .collect::<HashMap<i8, HashSet<&i8>>>()
+    ///         .collect()
     /// );
     /// ```
     fn grouping_by_as_set<K, F>(self, key: F) -> HashMap<K, HashSet<Self::GItem>>
