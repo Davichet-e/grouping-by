@@ -257,7 +257,7 @@ mod utilities {
         C: FnMut(&T::Item, &T::Item) -> std::cmp::Ordering,
     {
         let mut map = HashMap::new();
-        for item in iterator {
+        iterator.for_each(|item| {
             let key = key(&item);
             match map.entry(key) {
                 Entry::Occupied(mut entry) => {
@@ -269,7 +269,7 @@ mod utilities {
                     entry.insert(item);
                 }
             }
-        }
+        });
         map
     }
 }
@@ -282,9 +282,9 @@ impl<T: Iterator> GroupingBy for T {
         K: Eq + Hash,
     {
         let mut map = HashMap::new();
-        for item in self {
+        self.for_each(|item| {
             map.entry(key(&item)).or_insert_with(Vec::new).push(item);
-        }
+        });
         map
     }
     fn grouping_by_as_set<K, F>(self, mut key: F) -> HashMap<K, HashSet<Self::GItem>>
@@ -294,11 +294,11 @@ impl<T: Iterator> GroupingBy for T {
         K: Eq + Hash,
     {
         let mut map = HashMap::new();
-        for item in self {
+        self.for_each(|item| {
             map.entry(key(&item))
                 .or_insert_with(HashSet::new)
                 .insert(item);
-        }
+        });
         map
     }
     fn counter<K, F>(self, mut key: F) -> HashMap<K, usize>
@@ -307,9 +307,9 @@ impl<T: Iterator> GroupingBy for T {
         F: FnMut(&Self::GItem) -> K,
     {
         let mut map = HashMap::new();
-        for item in self {
+        self.for_each(|item| {
             *map.entry(key(&item)).or_insert(0) += 1;
-        }
+        });
         map
     }
 
@@ -339,10 +339,10 @@ impl<T: Iterator> GroupingBy for T {
         V: Default + std::ops::AddAssign,
     {
         let mut map: HashMap<K, V> = HashMap::new();
-        for item in self {
+        self.for_each(|item| {
             let v = map.entry(key(&item)).or_default();
             *v += value(&item);
-        }
+        });
         map
     }
 }
